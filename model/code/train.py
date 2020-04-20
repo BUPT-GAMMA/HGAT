@@ -28,7 +28,7 @@ embdir = 'embeddings/'
 makedirs([logdir, savedir, embdir])
 
 
-dataset = 'agnews'
+dataset = 'example'
 
 
 # Training settings

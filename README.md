@@ -40,38 +40,39 @@ The following files are required:
 
 The format is as following:
 
-**YourData.cites**:
+- **YourData.cites**
 
-​	Each line contains an edge:     "idx1\tidx2\n".        eg: "98	13"
+  Each line contains an edge:     "idx1\tidx2\n".        eg: "98	13"
 
-**YourData.content.text**:	
+- **YourData.content.text**
 
-​	Each line contains a node:    "idx\t[features]\t[category]\n", note that the [features] is a list of floats with \t as the delimiter.      eg:    "59	1.0	0.5	0.751	0.0	0.659	0.0	computers"	                   
+  Each line contains a node:    "idx\t[features]\t[category]\n", note that the [features] is a list of floats with '\t' as the delimiter.      eg:    "59	1.0	0.5	0.751	0.0	0.659	0.0	computers"
+  If used for multi-label classification,  [category] must be one-hot with space as delimiter,       eg:   "59	1.0	0.5	0.751	0.0	0.659	0.0	0 1 1 0 1 0".
 
-​	// [category] must be one-hot with space as delimiter, if used for multi-label classification.   eg:   "59	1.0	0.5	0.751	0.0	0.659	0.0	0 1 1 0 1 0".
+ - **YourData.content.entity**
 
-**YourData.content.entity**:
+   Similar with .text, just change the [category] to "entity".		eg: "13	0.0	0.0	1.0	0.0	0.0	entity"
 
-​	Similar with .text, just change the [category] to "entity".		eg: "13	0.0	0.0	1.0	0.0	0.0	entity"
+ - **YourData.content.topic**
 
-**YourData.content.topic**:
+   Similar with .text, just change the [category] to "topic".		eg: "64	0.10	1.21	8.09	0.10	topic"
 
-​	Similar with .text, just change the [category] to "topic".		eg: "64	0.10	1.21	8.09	0.10	topic"
+ - ***.map**
 
-***.map**:
+   Each line contains an index:     "idx\n".              eg:  "98"
 
-​	Each line contains an index:     "idx\n".              eg:  "98"
-
-You can see the examples in ./model/data/example/*
+You can see the example in ./model/data/example/*
 
 ----
 
-A simple data preprocessing code is provided. Successfully running it requires a token of [tagme](https://sobigdata.d4science.org/web/tagme/tagme-help "TagMe")'s account  (my personal token is provided  in tagme.py, but may be invalid in the future), [Wikipedia](https://dumps.wikimedia.org/ "WikiPedia")'s entity descriptions, and a word2vec model containing entity embeddings. You can obtain our files from [Google Drive]() and unzip them to ./data/ .
+A simple data preprocessing code is provided. Successfully running it requires a token of [tagme](https://sobigdata.d4science.org/web/tagme/tagme-help "TagMe")'s account  (my personal token is provided  in tagme.py, but may be invalid in the future), [Wikipedia](https://dumps.wikimedia.org/ "WikiPedia")'s entity descriptions, and a word2vec model containing entity embeddings. You can prepare them yourself or obtain our files from [Google Drive](https://drive.google.com/open?id=1v9GD5ezHGbekoLDw5aAzh6-C-QUS-j93) and unzip them to ./data/ .
 
-Then, you should modify the variable "dataset = 'example'" in the top of each code and
+Then, you should prepare a data file like ./data/example/example.txt, whose format is:         "[idx]\t[category]\t[content]\n". 
+
+Finally, modify the variable "dataset = 'example'" in the top of following codes and run:
 
 ```
-python tagme.py
+python tagMe.py
 python build_network.py
 python build_features.py
 python build_data.py
