@@ -1,4 +1,4 @@
-An implement of EMNLP 2019 paper "[Heterogeneous Graph Attention Networks for Semi-supervised Short Text Classification](http://shichuan.org/doc/74.pdf)". 
+An implement of EMNLP 2019 paper "[Heterogeneous Graph Attention Networks for Semi-supervised Short Text Classification](http://shichuan.org/doc/74.pdf)" and its extension "[HGAT: Heterogeneous Graph Attention Networks for Semi-supervised Short Text Classification](https://doi.org/10.1145/3450352)". 
 
 Thank you for your interest in our work!  :smile:
 
@@ -107,6 +107,20 @@ See the codes for more details.
 If you make advantage of the HGAT model in your research, please cite the following in your manuscript:
 
 ```
+@article{yang2021hgat,
+  author = {Yang, Tianchi and Hu, Linmei and Shi, Chuan and Ji, Houye and Li, Xiaoli and Nie, Liqiang},
+  title = {HGAT: Heterogeneous Graph Attention Networks for Semi-Supervised Short Text Classification},
+  year = {2021},
+  publisher = {Association for Computing Machinery},
+  volume = {39},
+  number = {3},
+  doi = {10.1145/3450352},
+  journal = {ACM Transactions on Information Systems},
+  month = may,
+  articleno = {32},
+  numpages = {29},
+}
+
 @inproceedings{linmei2019heterogeneous,
   title={Heterogeneous graph attention networks for semi-supervised short text classification},
   author={Linmei, Hu and Yang, Tianchi and Shi, Chuan and Ji, Houye and Li, Xiaoli},
