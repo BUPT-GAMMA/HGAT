@@ -17,31 +17,36 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 
 from utils import load_data, accuracy, dense_tensor_to_sparse, resample, makedirs
+from utils_inductive import transform_dataset_by_idx
 from models import HGAT
 import os, gc, sys
 from print_log import Logger
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 logdir = "log/"
 savedir = 'model/'
 embdir = 'embeddings/'
 makedirs([logdir, savedir, embdir])
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
+write_embeddings = True
+HOP = 2
 
 dataset = 'example'
 
-
-# Training settings
-write_embeddings = True
 LR = 0.01 if dataset == 'snippets' else 0.005
 DP = 0.95 if dataset in ['agnews', 'tagmynews'] else 0.8
-WD = 0 if dataset == 'snippets' else 5e-8
+WD = 0 if dataset == 'snippets' else 5e-6
 LR = 0.05 if 'multi' in dataset else LR
 DP = 0.5 if 'multi' in dataset else DP
 WD = 0 if 'multi' in dataset else WD
+
+# Training settings
 parser = argparse.ArgumentParser()
 parser.add_argument('--no_cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
+parser.add_argument('--fastmode', action='store_true', default=False,
+                    help='Validate during training pass.')
 parser.add_argument('--seed', type=int, default=42, help='Random seed.')
 parser.add_argument('--epochs', type=int, default=300,
                     help='Number of epochs to train.')
@@ -53,6 +58,8 @@ parser.add_argument('--hidden', type=int, default=512,
                     help='Number of hidden units.')
 parser.add_argument('--dropout', type=float, default=DP,
                     help='Dropout rate (1 - keep probability).')
+parser.add_argument('--inductive', type=bool, default=False,
+                    help='Whether use the transductive mode or inductive mode. ')
 parser.add_argument('--dataset', type=str, default=dataset,
                     help='Dataset')
 parser.add_argument('--repeat', type=int, default=1,
@@ -61,9 +68,10 @@ parser.add_argument('--node', action='store_false', default=True,
                     help='Use node-level attention or not. ')
 parser.add_argument('--type', action='store_false', default=True,
                     help='Use type-level attention or not. ')
-args = parser.parse_args()
 
+args = parser.parse_args()
 dataset = args.dataset
+
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 sys.stdout = Logger(logdir + "{}.log".format(dataset))
 
@@ -166,7 +174,6 @@ def train(epoch,
     loss_train.backward()
     optimizer.step()
 
-
     model.eval()
     output = model(input_features_val, input_adj_val)
     if isinstance(output, list):
@@ -219,10 +226,47 @@ path = '../data/'+ dataset +'/'
 adj, features, labels, idx_train_ori, idx_val_ori, idx_test_ori, idx_map = load_data(path = path, dataset = dataset)
 N = len(adj)
 
-input_adj_train, input_features_train, idx_out_train = adj, features, idx_train_ori
-input_adj_val, input_features_val, idx_out_val = adj, features, idx_val_ori
-input_adj_test, input_features_test, idx_out_test = adj, features, idx_test_ori
-idx_train, idx_val, idx_test = idx_train_ori, idx_val_ori, idx_test_ori
+# Transductive的数据集变换
+if args.inductive:
+    print("Transfer to be inductive.")
+
+    # resample
+    # 之前的数据集划分：  训练集20 * class   验证集1000   其他的测试集
+    # 这里换成：         训练集不变，  验证集 -> 测试集，
+    #                   原本的测试集拆出和训练集一样多的样本作为验证集，其余作为无标注样本
+    idx_train,idx_unlabeled,idx_val,idx_test = resample(idx_train_ori,idx_val_ori,idx_test_ori,path,idx_map)
+
+    # if experimentType == 'unlabeled':
+    #     bias = int(idx_unlabeled.shape[0] * supPara)
+    #     idx_unlabeled = idx_unlabeled[: bias]
+    #     print("\n\tidx_train: {}, idx_unlabeled: {},\n\tidx_val: {}, idx_test: {}".format(
+    #             idx_train.shape[0], idx_unlabeled.shape[0], idx_val.shape[0], idx_test.shape[0]))
+
+    input_adj_train, input_features_train, idx_related_train, idx_out_train = \
+            transform_dataset_by_idx(adj,features,torch.cat([idx_train, idx_unlabeled]),idx_train, hop=HOP)
+    input_adj_val, input_features_val, idx_related_val, idx_out_val = \
+            transform_dataset_by_idx(adj,features,idx_val,idx_val, hop=HOP)
+    input_adj_test, input_features_test, idx_related_test, idx_out_test = \
+            transform_dataset_by_idx(adj,features,idx_test,idx_test, hop=HOP)
+
+    all_node_count = sum([_.shape[0] for _ in adj[0]])
+    all_input_idx, all_related_idx = set(), set()
+    for input_idx, related_idx in [ [torch.cat([idx_train, idx_unlabeled]), idx_related_train],
+                                    [idx_val, idx_related_val],
+                                    [idx_test, idx_related_test] ]:
+        print("# input_nodes: {}, # related_nodes: {} / {}".format(
+                        len(input_idx), len(related_idx), all_node_count))
+        all_input_idx.update(input_idx.numpy().tolist())
+        all_related_idx.update(related_idx.numpy().tolist())
+    print("Sum: # input_nodes: {}, # related_nodes: {} / {}\n".format(
+                        len(all_input_idx), len(all_related_idx), all_node_count))
+else:
+    print("Transfer to be transductive.")
+    input_adj_train, input_features_train, idx_out_train = adj, features, idx_train_ori
+    input_adj_val, input_features_val, idx_out_val = adj, features, idx_val_ori
+    input_adj_test, input_features_test, idx_out_test = adj, features, idx_test_ori
+    idx_train, idx_val, idx_test = idx_train_ori, idx_val_ori, idx_test_ori
+
 
 if args.cuda:
     N = len(features)
@@ -253,8 +297,8 @@ for i in range(args.repeat):
 # Model and optimizer
     print("\n\nNo. {} test.\n".format(i+1))
     model = HGAT(nfeat_list=[i.shape[1] for i in features],
-                    type_attention = args.type,
-                    node_attention = args.node,
+                 type_attention=args.type,
+                 node_attention=args.node,
                     nhid=args.hidden,
                     nclass=labels.shape[1],
                     dropout=args.dropout,
@@ -323,7 +367,7 @@ for i in range(len(FINAL_RESULT)):
     else:
         print("{}:\tvali:  {:.5f}\ttest:  ACC: {:.4f} F1: {:.4f}, epoch={}".format(
                         i,
-                        FINAL_RESULT[i][0],
-                        FINAL_RESULT[i][1][0],
-                        FINAL_RESULT[i][1][1],
-                        FINAL_RESULT[i][2]))
+            FINAL_RESULT[i][0],
+            FINAL_RESULT[i][1][0],
+            FINAL_RESULT[i][1][1],
+            FINAL_RESULT[i][2]))

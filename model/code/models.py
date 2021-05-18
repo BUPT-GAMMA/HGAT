@@ -9,13 +9,17 @@ from utils import dense_tensor_to_sparse
 
 
 class HGAT(nn.Module):
-    def __init__(self, nfeat_list, nhid, nclass, dropout, type_attention=True, node_attention=True, gamma=0.1, sigmoid=False, orphan=True):
+    def __init__(self, nfeat_list, nhid, nclass, dropout,
+                 type_attention=True, node_attention=True,
+                 gamma=0.1, sigmoid=False, orphan=True,
+                 write_emb=True
+                 ):
         super(HGAT, self).__init__()
         self.sigmoid = sigmoid
         self.type_attention = type_attention
         self.node_attention = node_attention
 
-        self.write_emb = True
+        self.write_emb = write_emb
         if self.write_emb:
             self.emb = None
             self.emb2 = None
