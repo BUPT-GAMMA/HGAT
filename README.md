@@ -1,4 +1,4 @@
-An implement of EMNLP 2019 paper "[Heterogeneous Graph Attention Networks for Semi-supervised Short Text Classification](http://shichuan.org/doc/74.pdf)" and its extension "[HGAT: Heterogeneous Graph Attention Networks for Semi-supervised Short Text Classification](https://doi.org/10.1145/3450352)". 
+An implement of EMNLP 2019 paper "[Heterogeneous Graph Attention Networks for Semi-supervised Short Text Classification](http://shichuan.org/doc/74.pdf)" and its extension "[HGAT: Heterogeneous Graph Attention Networks for Semi-supervised Short Text Classification](https://doi.org/10.1145/3450352)"  (TOIS 2021). 
 
 Thank you for your interest in our work!  :smile:
 
